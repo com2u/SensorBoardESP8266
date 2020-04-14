@@ -52,31 +52,31 @@ void callback(char* topic, byte* payload, unsigned int length) {
   } else if (command.equals("true")) {
     value = HIGH;
   }
-  if (strstr(topic,MQTTOutput+'1')) {
+  if (strstr(topic, MQTTOutput + '1')) {
     outputNo = 0;
-  } else if (strstr(topic,MQTTOutput+'2')) {
+  } else if (strstr(topic, MQTTOutput + '2')) {
     outputNo = 1;
-  }else if (strstr(topic,MQTTOutput+'3')) {
+  } else if (strstr(topic, MQTTOutput + '3')) {
     outputNo = 2;
-  }else if (strstr(topic,MQTTOutput+'4')) {
+  } else if (strstr(topic, MQTTOutput + '4')) {
     outputNo = 3;
-  }else if (strstr(topic,MQTTOutput+'5')) {
+  } else if (strstr(topic, MQTTOutput + '5')) {
     outputNo = 4;
-  }else if (strstr(topic,MQTTOutput+'6')) {
+  } else if (strstr(topic, MQTTOutput + '6')) {
     outputNo = 5;
-  }else if (strstr(topic,MQTTOutput+'7')) {
+  } else if (strstr(topic, MQTTOutput + '7')) {
     outputNo = 6;
-  }else if (strstr(topic,MQTTOutput+'8')) {
+  } else if (strstr(topic, MQTTOutput + '8')) {
     outputNo = 7;
   }
-  setOutput(outputNo,value);
+  setOutput(outputNo, value);
   Serial.print("  Output [");
   Serial.print(outputNo);
   Serial.print(",");
   Serial.print(value);
   Serial.println("] ");
   if (outputNo >= 0) {
-    setOutput(outputNo,value);
+    setOutput(outputNo, value);
   }
 
 
@@ -86,46 +86,64 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void reconnect() {
   // Loop until we're reconnected
-  while (!client.connected() && reconnectCount < 3) {
-    reconnectCount++;
-    
-    // Create a random client ID
-    String clientId = "ESP8266Client-";
-    clientId += String(random(0xffff), HEX);
-    Serial.print("Attempting MQTT connection... ");
-    Serial.print(clientId);
-    // Attempt to connect
-    if (client.connect(clientId.c_str(),MQTTUser,  MQTTPassword)) {
-      Serial.println("connected");
-      reconnectCount = 0;
-      // Once connected, publish an announcement...
-      clientId.toCharArray(msg, clientId.length());
-      client.publish("ESPInit_SENSORBOARD", msg);
-      client.publish("ESPInit_SENSORBOARD_Version",swversion);
-      client.publish("ESPInit_SENSORBOARD_Path",MQTTOutput);
-      // ... and resubscribe
-      client.subscribe("ESPCommands");
-      client.subscribe(MQTTOutput+'#');
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
+  if (WiFi.status() != WL_CONNECTED) {
+    initWIFI();
   }
-  reconnectCount = 0;
+  int mqttNo = 0;
+  int mqttSize = 0;
+
+  while (mqttSize < sizeof(mqtt_servers) ) {
+    mqttSize += sizeof(mqtt_servers[mqttNo]);
+    Serial.print(mqttNo);
+    Serial.print(" MQTT Server :");
+    Serial.println(mqtt_servers[mqttNo]);
+
+    client.setServer( mqtt_servers[mqttNo], mqttPort);
+    client.setCallback(callback);
+    Serial.print("Connecting ");
+    while (!client.connected() && reconnectCount < 3) {
+      reconnectCount++;
+
+      // Create a random client ID
+      String clientId = "ESP8266Client-";
+      clientId += String(random(0xffff), HEX);
+      Serial.print("Attempting MQTT connection... ");
+      Serial.print(clientId);
+      // Attempt to connect
+      if (client.connect(clientId.c_str(), MQTTUser,  MQTTPassword)) {
+        client.setCallback(callback);
+        Serial.println("connected");
+        reconnectCount = 0;
+        // Once connected, publish an announcement...
+        clientId.toCharArray(msg, clientId.length());
+        client.publish("ESPInit_SENSORBOARD", msg);
+        client.publish("ESPInit_SENSORBOARD_Version", swversion);
+        client.publish("ESPInit_SENSORBOARD_Path", MQTTOutput);
+        // ... and resubscribe
+        client.subscribe("ESPCommands");
+        client.subscribe(MQTTOutput + '#');
+      } else {
+        Serial.print("failed, rc=");
+        Serial.print(client.state());
+        Serial.println(" try again in 5 seconds");
+        // Wait 5 seconds before retrying
+        delay(5000);
+      }
+    }
+    reconnectCount = 0;
+    mqttNo++;
+  }
 }
 
 void initMQTT() {
-  Serial.print("MQTT Server :");
-  Serial.println(mqtt_server);
-  Serial.print("MQTT Path :");
-  Serial.println(MQTTPath);
+  reconnect();
+  //Serial.print("MQTT Server :");
+  //Serial.println(mqtt_server);
+  //Serial.print("MQTT Path :");
+  //Serial.println(MQTTPath);
+  //client.setServer( mqtt_server, mqttPort);
+  //client.setCallback(callback);
 
-  client.setServer( mqtt_server, mqttPort);
-  client.setCallback(callback);
-  
 }
 
 void handleMQTT() {
@@ -203,7 +221,7 @@ boolean sendMQTTs() {
       topic.toCharArray(topicChar, topic.length());
       client.publish(topicChar, msg);
     }
-   
+
     done = true;
   }
   return done;

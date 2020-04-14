@@ -27,22 +27,23 @@ void initWIFI() {
   
   //connect to WiFi
   int networkNo = 0;
+  int ssidSize = 0;
   int retries = 12;
   int retry = 0;
   //attempt to connect to the wifi if connection is lost
   if (WiFi.status() != WL_CONNECTED) {
 
     // Try several WIFI Networks
-    for (networkNo = 0; networkNo < 10; networkNo++) {
+    //for(networkNo = 0; networkNo < 10; networkNo++) {
+    while (ssidSize < sizeof(ssid) ) {
+      ssidSize += sizeof(ssid[networkNo]);
       Serial.print("Connecting ");
       Serial.print(networkNo);
-      Serial.print(" of ");
-      Serial.print(sizeof(ssid));
       Serial.print(" to ");
       Serial.println(ssid[networkNo]);
       delay(100);
       WiFi.begin(ssid[networkNo], password[networkNo]);
-        String clientName;
+      String clientName;
       clientName += "SensorBoard-";
       uint8_t mac[6];
       WiFi.macAddress(mac);
@@ -60,12 +61,7 @@ void initWIFI() {
         Serial.println("Connected");
         break;
       }
-      /*
-      Serial.println("Try another AP");
-      WiFi.mode(WIFI_OFF);
-      delay(2000);
-      WiFi.mode(WIFI_STA);
-      */
+      networkNo++;
     }
   }
   // Create Acces Point when no WIFI found
