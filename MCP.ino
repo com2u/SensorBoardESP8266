@@ -18,52 +18,54 @@ Adafruit_MCP23017 mcp;
 
 void initMCP() {
   mcp.begin(0x27);      // use default address 0
-  mcp.pinMode(0, OUTPUT);
-  mcp.pinMode(1, OUTPUT);
-  mcp.pinMode(2, OUTPUT);
-  mcp.pinMode(3, OUTPUT);
-  mcp.pinMode(4, OUTPUT);
-  mcp.pinMode(5, OUTPUT);
-  mcp.pinMode(6, OUTPUT);
-  mcp.pinMode(7, OUTPUT);
-  mcp.pinMode(8, INPUT);
-  mcp.pinMode(9, INPUT);
-  mcp.pinMode(10, INPUT);
-  mcp.pinMode(11, INPUT);
-  mcp.pinMode(12, INPUT);
-  mcp.pinMode(13, INPUT);
-  mcp.pinMode(14, INPUT);
-  mcp.pinMode(15, INPUT);
-
-  mcp.pullUp(8, LOW);
-  mcp.pullUp(9, LOW);
-  mcp.pullUp(10, LOW);
-  mcp.pullUp(11, LOW);
-  mcp.pullUp(12, LOW);
-  mcp.pullUp(13, LOW);
-  mcp.pullUp(14, LOW);
-  mcp.pullUp(15, LOW);
-
   mcp.setupInterruptPin(8, CHANGE);
-  mcp.setupInterruptPin(9, CHANGE);
-  mcp.setupInterruptPin(10, CHANGE);
-  mcp.setupInterruptPin(11, CHANGE);
-  mcp.setupInterruptPin(12, CHANGE);
-  mcp.setupInterruptPin(13, CHANGE);
-  mcp.setupInterruptPin(14, CHANGE);
-  mcp.setupInterruptPin(15, CHANGE);
-  
-  mcp.setupInterrupts(true, false, HIGH);
-  
+  if (mcp.getLastInterruptPin() != 8) {
+    Serial.println("Could not init Adafruit_MCP23017");
+  } else {
+    mcp.pinMode(0, OUTPUT);
+    mcp.pinMode(1, OUTPUT);
+    mcp.pinMode(2, OUTPUT);
+    mcp.pinMode(3, OUTPUT);
+    mcp.pinMode(4, OUTPUT);
+    mcp.pinMode(5, OUTPUT);
+    mcp.pinMode(6, OUTPUT);
+    mcp.pinMode(7, OUTPUT);
+    mcp.pinMode(8, INPUT);
+    mcp.pinMode(9, INPUT);
+    mcp.pinMode(10, INPUT);
+    mcp.pinMode(11, INPUT);
+    mcp.pinMode(12, INPUT);
+    mcp.pinMode(13, INPUT);
+    mcp.pinMode(14, INPUT);
+    mcp.pinMode(15, INPUT);
 
-  pinMode(InterruptLED_PIN, OUTPUT);  // use the p13 LED as debugging
-  digitalWrite(InterruptMCP_PIN, HIGH);
-  //pinMode(InterruptMCP_PIN, INPUT_PULLUP);
-  //mcp.readGPIOAB();
-  //attachInterrupt(digitalPinToInterrupt(InterruptMCP_PIN), intARead, CHANGE);
-  Serial.print("Interrupt Attached to GPIO ");
-  Serial.println(InterruptMCP_PIN);
-  
+    mcp.pullUp(8, LOW);
+    mcp.pullUp(9, LOW);
+    mcp.pullUp(10, LOW);
+    mcp.pullUp(11, LOW);
+    mcp.pullUp(12, LOW);
+    mcp.pullUp(13, LOW);
+    mcp.pullUp(14, LOW);
+    mcp.pullUp(15, LOW);
+
+    mcp.setupInterruptPin(8, CHANGE);
+    mcp.setupInterruptPin(9, CHANGE);
+    mcp.setupInterruptPin(10, CHANGE);
+    mcp.setupInterruptPin(11, CHANGE);
+    mcp.setupInterruptPin(12, CHANGE);
+    mcp.setupInterruptPin(13, CHANGE);
+    mcp.setupInterruptPin(14, CHANGE);
+    mcp.setupInterruptPin(15, CHANGE);
+
+    mcp.setupInterrupts(true, false, HIGH);
+    pinMode(InterruptLED_PIN, OUTPUT);  // use the p13 LED as debugging
+    digitalWrite(InterruptMCP_PIN, HIGH);
+    //pinMode(InterruptMCP_PIN, INPUT_PULLUP);
+    //mcp.readGPIOAB();
+    //attachInterrupt(digitalPinToInterrupt(InterruptMCP_PIN), intARead, CHANGE);
+    Serial.print("Interrupt Attached to GPIO ");
+    Serial.println(InterruptMCP_PIN);
+  }
 }
 //portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -75,31 +77,31 @@ void intARead() {
   digitalWrite(InterruptLED_PIN, LOW);
   //portEXIT_CRITICAL_ISR(&mux);
   interrupts();
-  
+
 }
 
 
 
 
-void resetMCP(){
-      mcp.readGPIOAB();
+void resetMCP() {
+  mcp.readGPIOAB();
 }
 
-void resetMCPCount(){
-   for (int i = 0; i < 8; i++) {
-      sensors.inputCount[i] = 0;
-   }
+void resetMCPCount() {
+  for (int i = 0; i < 8; i++) {
+    sensors.inputCount[i] = 0;
+  }
 }
 
-void setOutput(int number,uint8_t status ){
+void setOutput(int number, uint8_t status ) {
   mcp.digitalWrite(number, status);
   Serial.println("setOutput");
 }
 
-boolean readMCP(){
+boolean readMCP() {
   boolean changed = false;
-   for (int i = 0; i < 8; i++) {
-    sensors.inputStatus[i] = mcp.digitalRead(8+i);
+  for (int i = 0; i < 8; i++) {
+    sensors.inputStatus[i] = mcp.digitalRead(8 + i);
     if (sensors.inputStatus[i] != sensors.inputLast[i]) {
       sensors.inputLast[i] = sensors.inputStatus[i];
       sensors.inputCount[i]++;
@@ -131,19 +133,19 @@ boolean readMCP(){
       } else if (i == 7) {
         // Ausio
         sensors.measurement[13] = String(sensors.inputCount[i]);
-     
+
       }
-      
+
       Serial.print(sensors.inputName[i]);
       Serial.print("  ");
       Serial.println(sensors.inputCount[i]);
     }
-   }
-   if (changed == true) {
-   for (int i = 0; i < 8; i++) {
-    Serial.print(sensors.inputStatus[i]);
-   }
-   Serial.println();
-   }
-   return changed;
+  }
+  if (changed == true) {
+    for (int i = 0; i < 8; i++) {
+      Serial.print(sensors.inputStatus[i]);
+    }
+    Serial.println();
+  }
+  return changed;
 }

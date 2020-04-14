@@ -11,7 +11,10 @@ int waitCount = 0;
 volatile int interruptCount = 1;
 #define InterruptLED_PIN D7
 #define InterruptMCP_PIN 16
-#define swversion "SensorBoardESP8266_V5"
+#define swversion "SensorBoardESP8266_V7"
+#define MQTT_MAX_PACKET_SIZE 1024
+#define MQTT_KEEPALIVE 366
+#define MQTT_SOCKET_TIMEOUT 377 
 
 #include <Wire.h>
 
@@ -120,7 +123,9 @@ void loop() {
   delay(50);
   
   
-  if (sendMQTTs()){
+  //if (sendMQTTs()){
+  //if (sendMQTT()){
+  if (sendMQTTJSON()){
     resetMCPCount();
     runLED(0,40,0,0,0,0);
   }

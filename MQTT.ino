@@ -1,9 +1,11 @@
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
+
 //#include <Credentials.h>
 
 //const char* mqtt_server = "192.168.0.1";
-const char* MQTTPath = "Com2u/Fenster/";
-const char* MQTTOutput = "Com2u/Fenster/Output/#";
+const char* MQTTPath = "Stefan/Router/";
+const char* MQTTOutput = "Stefan/Router/Output/";
 int mqttPort = 1883;
 //const char* clientID = "1";
 //const char* MQTTUser     = "MQTTUSR";
@@ -15,6 +17,17 @@ char msg[150];
 char topicChar[150];
 int value = 0;
 int reconnectCount = 0;
+StaticJsonDocument<220>  doc;
+
+String getSensordJSON() {
+  for (int i = 0; i <= sensors.noOfMQTTValues; i++) {
+    doc[sensors.header[i]] = sensors.measurement[i];
+    sensors.measurement[i] = "0";
+  }
+  String output;
+  serializeJson(doc, output);
+  return output;
+}
 
 void callback(char* topic, byte* payload, unsigned int length) {
   int outputNo = -1;
@@ -34,23 +47,27 @@ void callback(char* topic, byte* payload, unsigned int length) {
     value = HIGH;
   } else if (command.equals("2")) {
     value = CHANGE;
+  } else if (command.equals("false")) {
+    value = LOW;
+  } else if (command.equals("true")) {
+    value = HIGH;
   }
-  if (strstr(topic,"Com2u/Fenster/Output/1")) {
+  if (strstr(topic,MQTTOutput+'1')) {
+    outputNo = 0;
+  } else if (strstr(topic,MQTTOutput+'2')) {
     outputNo = 1;
-  } else if (strstr(topic,"Com2u/Fenster/Output/2")) {
+  }else if (strstr(topic,MQTTOutput+'3')) {
     outputNo = 2;
-  }else if (strstr(topic,"Com2u/Fenster/Output/3")) {
+  }else if (strstr(topic,MQTTOutput+'4')) {
     outputNo = 3;
-  }else if (strstr(topic,"Com2u/Fenster/Output/4")) {
+  }else if (strstr(topic,MQTTOutput+'5')) {
     outputNo = 4;
-  }else if (strstr(topic,"Com2u/Fenster/Output/5")) {
+  }else if (strstr(topic,MQTTOutput+'6')) {
     outputNo = 5;
-  }else if (strstr(topic,"Com2u/Fenster/Output/6")) {
+  }else if (strstr(topic,MQTTOutput+'7')) {
     outputNo = 6;
-  }else if (strstr(topic,"Com2u/Fenster/Output/7")) {
+  }else if (strstr(topic,MQTTOutput+'8')) {
     outputNo = 7;
-  }else if (strstr(topic,"Com2u/Fenster/Output/8")) {
-    outputNo = 8;
   }
   setOutput(outputNo,value);
   Serial.print("  Output [");
@@ -85,9 +102,10 @@ void reconnect() {
       clientId.toCharArray(msg, clientId.length());
       client.publish("ESPInit_SENSORBOARD", msg);
       client.publish("ESPInit_SENSORBOARD_Version",swversion);
+      client.publish("ESPInit_SENSORBOARD_Path",MQTTOutput);
       // ... and resubscribe
       client.subscribe("ESPCommands");
-      client.subscribe(MQTTOutput);
+      client.subscribe(MQTTOutput+'#');
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -116,6 +134,27 @@ void handleMQTT() {
   }
   client.loop();
 }
+
+boolean sendMQTTJSON() {
+  boolean done = false;
+  if (!client.connected()) {
+    reconnect();
+  }
+  if (client.connected()) {
+    String topic = MQTTPath;
+    topic += "Sensors";
+    String values = getSensordJSON();
+    Serial.print(topic);
+    Serial.print(" Message: ");
+    Serial.println(values);
+    values.toCharArray(msg, values.length());
+    topic.toCharArray(topicChar, topic.length());
+    client.publish(topicChar, msg);
+    done = true;
+  }
+  return done;
+}
+
 
 boolean sendMQTT() {
   boolean done = false;
